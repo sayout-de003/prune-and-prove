@@ -186,6 +186,159 @@ class DependencyGraph:
             "dynamic_warnings": dynamic_warnings,
         }
 
+    def trace_pipeline(self, start_query: str, max_depth: int = 8) -> dict[str, Any]:
+        """Trace an ordered step-by-step execution pipeline from a route, function, or file."""
+        seeds = self.resolve_target(start_query)
+        if not seeds:
+            return {
+                "id": start_query,
+                "label": start_query,
+                "kind": "unknown",
+                "file_path": None,
+                "total_steps": 0,
+                "total_nodes": 0,
+                "total_edges": 0,
+                "steps": [],
+            }
+
+        primary = seeds[0]
+        primary_node = self.nodes[primary]
+
+        # If starting from a file node, seed Step 0 with its defined callables that have outgoing calls
+        frontier: list[str] = []
+        if primary_node.kind in {"file", "test"}:
+            defined = [
+                e.target
+                for e in self.outgoing(primary, {"DEFINES"})
+                if e.target in self.nodes and self.outgoing(e.target, {"CALLS", "ROUTES_TO"})
+            ]
+            frontier = sorted(set(defined)) if defined else [primary]
+        else:
+            frontier = sorted(set(seeds))
+
+        visited: set[str] = set(frontier)
+        steps: list[dict[str, Any]] = [
+            {
+                "step": 0,
+                "nodes": list(frontier),
+                "edges": [],
+            }
+        ]
+        total_edges = 0
+
+        for step_idx in range(1, max_depth + 1):
+            next_nodes: set[str] = set()
+            step_edges: list[dict[str, Any]] = []
+            seen_step_edges: set[tuple[str, str, str]] = set()
+
+            for src_id in frontier:
+                src_node = self.nodes.get(src_id)
+                out_edges = self.outgoing(src_id, {"ROUTES_TO", "CALLS"})
+                # If a file node has no direct CALLS, fall back to IMPORTS for file-level pipeline hops
+                if not out_edges and src_node and src_node.kind == "file":
+                    out_edges = [
+                        e
+                        for e in self.outgoing(src_id, {"IMPORTS"})
+                        if e.target in self.nodes and self.nodes[e.target].kind != "external"
+                    ]
+
+                for edge in sorted(out_edges, key=lambda e: (e.metadata.get("line", 0), e.target)):
+                    tgt_node = self.nodes.get(edge.target)
+                    if not tgt_node or tgt_node.kind == "external":
+                        continue
+                    if edge.target in visited and edge.target not in next_nodes:
+                        continue
+                    ekey = (edge.source, edge.target, edge.relation)
+                    if ekey in seen_step_edges:
+                        continue
+                    seen_step_edges.add(ekey)
+                    next_nodes.add(edge.target)
+                    src_file = src_node.file_path if src_node else None
+                    tgt_file = tgt_node.file_path
+                    step_edges.append(
+                        {
+                            "source": edge.source,
+                            "target": edge.target,
+                            "source_file": src_file,
+                            "target_file": tgt_file,
+                            "cross_file": bool(src_file and tgt_file and src_file != tgt_file),
+                            "relation": edge.relation,
+                            "provenance": edge.provenance,
+                            "line": edge.metadata.get("line"),
+                            "raw_callee": edge.metadata.get("raw_callee"),
+                        }
+                    )
+
+            if not next_nodes:
+                break
+
+            visited.update(next_nodes)
+            frontier = sorted(next_nodes)
+            total_edges += len(step_edges)
+            steps.append(
+                {
+                    "step": step_idx,
+                    "nodes": frontier,
+                    "edges": step_edges,
+                }
+            )
+
+        return {
+            "id": primary,
+            "label": primary_node.label,
+            "kind": primary_node.kind,
+            "file_path": primary_node.file_path,
+            "total_steps": len(steps),
+            "total_nodes": len(visited),
+            "total_edges": total_edges,
+            "steps": steps,
+        }
+
+    def discover_pipelines(self, max_pipelines: int = 30, max_depth: int = 8) -> list[dict[str, Any]]:
+        """Auto-discover top execution pipelines starting from routes and entrypoint functions."""
+        routes = sorted(nid for nid, n in self.nodes.items() if n.kind == "route")
+
+        entry_hints = ("main", "run", "cli", "app", "execute", "handle", "start", "dispatch", "process")
+        entry_candidates: list[tuple[int, int, str]] = []
+        for nid, node in self.nodes.items():
+            if node.kind not in {"function", "method"}:
+                continue
+            if "test" in node.metadata.get("categories", []):
+                continue
+            if self.incoming(nid, {"CALLS", "ROUTES_TO"}):
+                continue
+            out_calls = self.outgoing(nid, {"CALLS"})
+            if not out_calls:
+                continue
+            lower_lbl = node.label.lower().split(".")[-1]
+            hint_priority = 0 if any(lower_lbl.startswith(h) for h in entry_hints) else 1
+            entry_candidates.append((hint_priority, -len(out_calls), nid))
+
+        entry_candidates.sort()
+        ordered_seeds = routes + [nid for _, _, nid in entry_candidates[: max_pipelines * 2]]
+
+        discovered: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        for seed in ordered_seeds:
+            if seed in seen_ids:
+                continue
+            seen_ids.add(seed)
+            pipe = self.trace_pipeline(seed, max_depth=max_depth)
+            if pipe["total_steps"] >= 2:
+                discovered.append(pipe)
+            if len(discovered) >= max_pipelines:
+                break
+
+        discovered.sort(
+            key=lambda p: (
+                0 if p["kind"] == "route" else 1,
+                -p["total_steps"],
+                -p["total_nodes"],
+                p["id"],
+            )
+        )
+        return discovered[:max_pipelines]
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "root": self.root,

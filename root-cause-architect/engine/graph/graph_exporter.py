@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from engine.graph.dependency_graph import DependencyGraph
+from engine.graph.html_3d_exporter import Interactive3DExporter
 
 
 _SAFE_ID_RE = re.compile(r"[^A-Za-z0-9_]")
@@ -31,6 +32,41 @@ class GraphExporter:
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(GraphExporter.to_json(graph), encoding="utf-8")
+        return path
+
+    @staticmethod
+    def to_interactive_3d_html(
+        graph: DependencyGraph,
+        validation: dict[str, Any] | None = None,
+        include_external: bool = False,
+        pipeline_depth: int = 8,
+    ) -> str:
+        return Interactive3DExporter.render(
+            graph,
+            validation=validation,
+            include_external=include_external,
+            pipeline_depth=pipeline_depth,
+        )
+
+    @staticmethod
+    def write_interactive_3d_html(
+        graph: DependencyGraph,
+        output_path: str | Path,
+        validation: dict[str, Any] | None = None,
+        include_external: bool = False,
+        pipeline_depth: int = 8,
+    ) -> Path:
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            GraphExporter.to_interactive_3d_html(
+                graph,
+                validation=validation,
+                include_external=include_external,
+                pipeline_depth=pipeline_depth,
+            ),
+            encoding="utf-8",
+        )
         return path
 
     @staticmethod

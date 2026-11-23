@@ -135,8 +135,8 @@ python3 scripts/analyze.py map /path/to/repo --output repository-map.md
 ```
 
 ```bash
-# 3. Build & validate the dependency graph (Exports JSON + interactive Mermaid flowchart)
-python3 scripts/analyze.py graph /path/to/repo --output dependency-graph.json --mermaid architecture.mmd
+# 3. Build & validate the dependency graph (Exports JSON, Mermaid flowchart, and interactive 3D WebGL file/function/pipeline map)
+python3 scripts/analyze.py graph /path/to/repo --output dependency-graph.json --mermaid architecture.mmd --html architecture-3d.html
 ```
 
 ```bash

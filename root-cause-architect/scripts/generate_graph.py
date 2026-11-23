@@ -20,7 +20,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("repo", help="Path to the target repository")
     parser.add_argument("--output", "-o", help="Write dependency-graph JSON to this path")
     parser.add_argument("--mermaid", help="Write Mermaid flowchart to this path")
-    parser.add_argument("--include-external", action="store_true", help="Include external packages in Mermaid output")
+    parser.add_argument("--html", help="Write interactive 3D WebGL file/function/pipeline map HTML to this path")
+    parser.add_argument("--pipeline-depth", type=int, default=8, help="Max hop depth for auto-discovered execution pipelines (default: 8)")
+    parser.add_argument("--include-external", action="store_true", help="Include external packages in Mermaid and 3D HTML outputs")
     args = parser.parse_args(argv)
 
     graph, _ = GraphBuilder().build_from_path(args.repo)
@@ -35,12 +37,21 @@ def main(argv: list[str] | None = None) -> int:
             GraphExporter.to_mermaid(graph, include_external=args.include_external),
             encoding="utf-8",
         )
+    if args.html:
+        GraphExporter.write_interactive_3d_html(
+            graph,
+            args.html,
+            validation=validation.to_dict(),
+            include_external=args.include_external,
+            pipeline_depth=args.pipeline_depth,
+        )
 
     summary = {
         "root": graph.root,
         "validation": validation.to_dict(),
         "output_json": args.output,
         "output_mermaid": args.mermaid,
+        "output_html": args.html,
     }
     print(json.dumps(summary, indent=2))
     return 0 if validation.valid else 1

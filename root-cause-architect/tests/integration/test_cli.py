@@ -34,6 +34,7 @@ class CliIntegrationTests(unittest.TestCase):
             map_out = Path(tmp) / "repository-map.md"
             graph_out = Path(tmp) / "dependency-graph.json"
             mmd_out = Path(tmp) / "architecture.mmd"
+            html_out = Path(tmp) / "architecture-3d.html"
 
             p_map = self._run("map", str(PYTHON_FIXTURE), "--output", str(map_out))
             self.assertEqual(p_map.returncode, 0, p_map.stderr)
@@ -46,12 +47,17 @@ class CliIntegrationTests(unittest.TestCase):
                 str(graph_out),
                 "--mermaid",
                 str(mmd_out),
+                "--html",
+                str(html_out),
             )
             self.assertEqual(p_graph.returncode, 0, p_graph.stderr)
             summary = json.loads(p_graph.stdout)
             self.assertTrue(summary["validation"]["valid"])
             self.assertTrue(graph_out.exists())
             self.assertTrue(mmd_out.exists())
+            self.assertTrue(html_out.exists())
+            self.assertEqual(summary["output_html"], str(html_out))
+            self.assertIn("3d-force-graph", html_out.read_text(encoding="utf-8"))
 
             p_impact = self._run(
                 "impact",

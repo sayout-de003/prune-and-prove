@@ -64,6 +64,42 @@ class KnowledgeGraphTests(unittest.TestCase):
         self.assertEqual(len(report.import_cycles), 1)
         self.assertEqual(sorted(report.import_cycles[0]), ["a.py", "b.py"])
 
+    def test_pipeline_tracing_and_interactive_3d_html_export(self) -> None:
+        graph, _ = GraphBuilder().build_from_path(PYTHON_FIXTURE)
+        validation = GraphValidator().validate(graph)
+
+        # Trace execution pipeline from FastAPI route across files and functions
+        pipeline = graph.trace_pipeline("route:POST /api/payments", max_depth=6)
+        self.assertEqual(pipeline["kind"], "route")
+        self.assertGreaterEqual(pipeline["total_steps"], 3)
+        self.assertEqual(pipeline["steps"][0]["nodes"], ["route:POST /api/payments"])
+        all_step_nodes = [nid for st in pipeline["steps"] for nid in st["nodes"]]
+        self.assertTrue(any("payment" in nid for nid in all_step_nodes))
+
+        # Auto-discover pipelines prioritizes routes
+        discovered = graph.discover_pipelines(max_pipelines=10, max_depth=6)
+        self.assertTrue(len(discovered) >= 1)
+        self.assertEqual(discovered[0]["kind"], "route")
+
+        # Interactive 3D HTML export contains embedded deterministic JSON payload
+        html = GraphExporter.to_interactive_3d_html(graph, validation=validation.to_dict())
+        self.assertIn("<!DOCTYPE html>", html)
+        self.assertIn("3d-force-graph", html)
+        self.assertIn("rca-graph-data", html)
+        self.assertIn("fileCallLinks", html)
+        self.assertIn("route:POST /api/payments", html)
+
+        # Extract embedded JSON and verify structure & integrity
+        marker_start = '<script id="rca-graph-data" type="application/json">'
+        start_idx = html.index(marker_start) + len(marker_start)
+        end_idx = html.index("</script>", start_idx)
+        payload = json.loads(html[start_idx:end_idx])
+        self.assertGreater(payload["stats"]["nodes"], 5)
+        self.assertGreater(payload["stats"]["edges"], 5)
+        self.assertGreaterEqual(len(payload["pipelines"]), 1)
+        self.assertTrue(any(e["relation"] == "CALLS" for e in payload["edges"]))
+        self.assertTrue(len(payload["fileCallLinks"]) >= 1)
+
 
 if __name__ == "__main__":
     unittest.main()

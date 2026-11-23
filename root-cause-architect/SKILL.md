@@ -41,7 +41,7 @@ Choose the least expensive mode that can establish the truth. Never invoke all s
 | --- | --- | --- |
 | **Mode A — Quick Bug Fix** | Small, localized defects | Understand → Trace → Diagnose → Fix → Test → Review |
 | **Mode B — Deep Engineering** | Multi-module, API/DB, async, or state bugs | Map dependencies → Trace origin → Inspect history → Identify obsolete logic → Design → Rewrite → Regression test |
-| **Mode C — Architecture Discovery** | Large or unfamiliar repositories | Scan repository → Identify modules → Build knowledge graph → Trace entrypoints → Map contracts → Document system |
+| **Mode C — Architecture Discovery** | Large or unfamiliar repositories | Scan repository → Identify modules → Build knowledge graph → Export interactive 3D map (`--html`) → Trace pipelines & contracts → Document system |
 | **Mode D — Architectural Refactoring** | High-risk shared or structural changes | Discover architecture → Identify design flaws → Analyze blast radius → Plan migration → Prune → Rewrite → Verify → Review |
 
 ## 4. Adaptive Specialist Roles
@@ -68,7 +68,7 @@ Logical responsibilities — run as subagents where the platform supports them, 
 Every non-trivial task follows these phases (scaled to the active operating mode):
 
 1. **Repository Understanding** — Run `python3 scripts/analyze.py map <repo>` to inventory languages, frameworks, manifests, and entrypoints.
-2. **Execution & Dependency Mapping** — Run `python3 scripts/analyze.py graph <repo>` and `python3 scripts/analyze.py impact <repo> <target>` to map imports, calls, routes, models, and covering tests. Distinguish statically inferred edges from verified runtime calls.
+2. **Execution & Dependency Mapping** — Run `python3 scripts/analyze.py graph <repo> --html architecture-3d.html` and `python3 scripts/analyze.py impact <repo> <target>` to map file-to-file imports, function-to-function calls, routes, step-by-step execution pipelines, and covering tests. Distinguish statically inferred edges from verified runtime calls.
 3. **Root-Cause Investigation** — Distinguish symptom, trigger, immediate failure, earliest incorrect state, violated invariant, underlying defect, and contributing defects. Label every conclusion:
    - `PROVEN`: Directly supported by observable evidence.
    - `STRONGLY SUPPORTED`: Multiple independent pieces of evidence align.
@@ -125,7 +125,7 @@ Prefer running the local deterministic toolkit over guessing from partial file r
 ```bash
 python3 scripts/analyze.py health
 python3 scripts/analyze.py map <repo_path> [--output repository-map.md] [--json]
-python3 scripts/analyze.py graph <repo_path> [--output dependency-graph.json] [--mermaid architecture.mmd]
+python3 scripts/analyze.py graph <repo_path> [--output dependency-graph.json] [--mermaid architecture.mmd] [--html architecture-3d.html] [--pipeline-depth 8]
 python3 scripts/analyze.py impact <repo_path> <file_or_symbol> [--depth 3]
 ```
 

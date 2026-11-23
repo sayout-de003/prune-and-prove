@@ -27,8 +27,8 @@ def main(argv: list[str] | None = None) -> int:
             "Commands:\n"
             "  health                         Verify toolkit configuration and parser readiness\n"
             "  map <repo> [-o file] [--json]  Inventory languages, frameworks, and entrypoints\n"
-            "  graph <repo> [-o file] [--mermaid file]\n"
-            "                                 Build and validate the knowledge graph\n"
+            "  graph <repo> [-o file] [--mermaid file] [--html file]\n"
+            "                                 Build, validate, and export 3D interactive knowledge graph\n"
             "  impact <repo> <target> [--depth N] [--json]\n"
             "                                 Compute upstream/downstream blast radius and covering tests",
             file=sys.stderr,
