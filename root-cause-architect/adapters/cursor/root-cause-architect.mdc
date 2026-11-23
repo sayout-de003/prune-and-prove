@@ -1,0 +1,14 @@
+---
+description: Root-Cause Architect v2 — evidence-driven investigation, root-cause diagnosis, safe consolidation, and verified fixes.
+globs:
+alwaysApply: false
+---
+
+Load and follow `SKILL.md` in `root-cause-architect/SKILL.md`.
+
+Use the local deterministic toolkit before proposing edits:
+- `python3 scripts/analyze.py map <repo>`
+- `python3 scripts/analyze.py graph <repo>`
+- `python3 scripts/analyze.py impact <repo> <target>`
+
+Do not duplicate the full protocol here; `SKILL.md` is the single source of truth.

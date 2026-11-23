@@ -1,0 +1,180 @@
+
+version: 1
+
+scan_policy:
+  follow_symlinks: false
+  max_file_size_bytes: 2097152
+  include_hidden_files: true
+  preserve_project_metadata: true
+
+directories:
+  exact:
+    - .git
+    - .hg
+    - .svn
+    - .idea
+    - .vscode
+    - __pycache__
+    - .pytest_cache
+    - .mypy_cache
+    - .ruff_cache
+    - .hypothesis
+    - .tox
+    - .nox
+    - .venv
+    - venv
+    - env
+    - node_modules
+    - vendor
+    - dist
+    - build
+    - coverage
+    - .next
+    - .nuxt
+    - .output
+    - .dart_tool
+    - .flutter-plugins
+    - Pods
+    - DerivedData
+    - .gradle
+    - target
+    - .terraform
+    - .serverless
+    - .vercel
+    - .turbo
+    - .cache
+
+files:
+  exact:
+    - .DS_Store
+    - Thumbs.db
+    - desktop.ini
+
+  extensions:
+    - .pyc
+    - .pyo
+    - .class
+    - .o
+    - .obj
+    - .so
+    - .dylib
+    - .dll
+    - .exe
+    - .bin
+    - .wasm
+    - .a
+    - .lib
+    - .jar
+    - .war
+    - .ear
+    - .zip
+    - .tar
+    - .gz
+    - .7z
+    - .rar
+    - .pdf
+    - .png
+    - .jpg
+    - .jpeg
+    - .gif
+    - .webp
+    - .ico
+    - .mp3
+    - .mp4
+    - .mov
+    - .avi
+    - .woff
+    - .woff2
+    - .ttf
+    - .otf
+
+sensitive_files:
+  exact:
+    - .env
+    - .env.local
+    - .env.production
+    - .env.development
+    - id_rsa
+    - id_ed25519
+    - credentials.json
+    - service-account.json
+
+  policy:
+    action: skip_content
+    record_presence: true
+    never_print_values: true
+    never_send_contents_to_model: true
+
+preserve:
+  directories:
+    - .github
+    - .gitlab
+    - .circleci
+    - migrations
+    - migration
+    - tests
+    - test
+    - config
+    - scripts
+    - docker
+    - deploy
+    - infrastructure
+
+  important_files:
+    - pyproject.toml
+    - requirements.txt
+    - package.json
+    - package-lock.json
+    - pnpm-lock.yaml
+    - yarn.lock
+    - bun.lock
+    - bun.lockb
+    - Cargo.toml
+    - Cargo.lock
+    - go.mod
+    - go.sum
+    - composer.json
+    - composer.lock
+    - pubspec.yaml
+    - pubspec.lock
+    - Dockerfile
+    - docker-compose.yml
+    - docker-compose.yaml
+    - Makefile
+    - justfile
+    - tsconfig.json
+    - vite.config.ts
+    - next.config.js
+    - next.config.ts
+    - manage.py
+
+special_rules:
+  lockfiles:
+    inventory: true
+    dependency_analysis: true
+    content_analysis: conditional
+
+  migrations:
+    inventory: true
+    content_analysis: true
+
+  tests:
+    inventory: true
+    content_analysis: true
+
+  source_maps:
+    inventory: true
+    content_analysis: conditional
+
+  generated_files:
+    inventory: conditional
+    content_analysis: false
+
+  unknown_extensions:
+    exclude: false
+
+safety:
+  never_delete_files: true
+  never_modify_files: true
+  never_follow_symlinks_outside_repository: true
+  never_expose_secret_values: true

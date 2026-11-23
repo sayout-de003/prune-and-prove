@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "symbol.schema.json",
+  "title": "SymbolInfo",
+  "type": "object",
+  "required": ["name", "qualified_name", "kind", "file_path", "start_line", "end_line"],
+  "properties": {
+    "name": { "type": "string" },
+    "qualified_name": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "enum": ["function", "method", "class", "interface", "type"]
+    },
+    "file_path": { "type": "string" },
+    "start_line": { "type": "integer", "minimum": 1 },
+    "end_line": { "type": "integer", "minimum": 1 },
+    "parameters": { "type": "array", "items": { "type": "string" } },
+    "bases": { "type": "array", "items": { "type": "string" } },
+    "decorators": { "type": "array", "items": { "type": "string" } },
+    "exported": { "type": "boolean" }
+  }
+}

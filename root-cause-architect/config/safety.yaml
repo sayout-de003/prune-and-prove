@@ -1,0 +1,42 @@
+version: 1
+
+risk_levels:
+  level_0_read_only:
+    approval: automatic
+    allowed:
+      - repository_scan
+      - graph_generation
+      - impact_analysis
+      - diagnostics
+      - reporting
+  level_1_local:
+    approval: automatic
+    allowed:
+      - scoped_bug_fix
+      - unused_local_import_removal
+      - local_unit_tests
+  level_2_shared:
+    approval: review_required
+    triggers:
+      - shared_business_logic
+      - public_interface_change
+      - multi_module_refactor
+      - dependency_manifest_change
+  level_3_critical:
+    approval: explicit_approval
+    triggers:
+      - database_migration
+      - destructive_operation
+      - authentication_or_authorization
+      - payment_or_billing_logic
+      - production_configuration
+      - security_policy_change
+
+protections:
+  never_read_or_print_secrets: true
+  never_modify_env_files: true
+  never_run_destructive_db_commands: true
+  never_rewrite_migration_history: true
+  never_push_or_deploy_without_approval: true
+  preserve_uncommitted_user_changes: true
+  require_rollback_plan_for_level_2_plus: true

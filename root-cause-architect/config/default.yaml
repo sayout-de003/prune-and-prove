@@ -1,0 +1,53 @@
+system:
+  name: root-cause-architect
+  version: "2.0.0"
+  mode: adaptive
+  evidence_driven: true
+
+engineering:
+  diagnosis_before_edit: true
+  root_cause_required: true
+  delete_superseded_logic: true
+  prohibit_test_overfitting: true
+  preserve_existing_contracts: true
+  avoid_unrelated_refactoring: true
+  require_independent_review: true
+
+analysis:
+  repository_scan: true
+  call_graph: true
+  dependency_graph: true
+  data_flow: true
+  runtime_tracing: adaptive
+  git_history: true
+  framework_detection: true
+
+refactoring:
+  automatic_deletion: conservative
+  require_deletion_evidence: true
+  preserve_user_changes: true
+  require_migration_review: true
+  shared_interface_review: true
+
+verification:
+  run_unit_tests: true
+  run_integration_tests: adaptive
+  run_contract_tests: adaptive
+  run_regression_tests: true
+  run_e2e_tests: adaptive
+  verify_references: true
+  independent_review: true
+  report_unexecuted_tests: true
+
+safety:
+  protect_secrets: true
+  protect_production_data: true
+  destructive_operations_require_approval: true
+  production_deployment_requires_approval: true
+
+reporting:
+  include_root_cause: true
+  include_deleted_code: true
+  include_modified_files: true
+  include_test_evidence: true
+  include_remaining_risks: true

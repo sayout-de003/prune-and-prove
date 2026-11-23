@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "diagnosis.schema.json",
+  "title": "RootCauseDiagnosis",
+  "type": "object",
+  "required": ["symptom", "expected_behavior", "actual_behavior", "root_cause", "confidence", "evidence"],
+  "properties": {
+    "symptom": { "type": "string" },
+    "trigger": { "type": "string" },
+    "expected_behavior": { "type": "string" },
+    "actual_behavior": { "type": "string" },
+    "immediate_failure": { "type": "string" },
+    "earliest_invalid_state": { "type": "string" },
+    "violated_invariant": { "type": "string" },
+    "root_cause": { "type": "string" },
+    "contributing_defects": { "type": "array", "items": { "type": "string" } },
+    "confidence": {
+      "type": "string",
+      "enum": ["PROVEN", "STRONGLY_SUPPORTED", "HYPOTHESIS", "UNKNOWN"]
+    },
+    "evidence": { "type": "array", "items": { "type": "string" } }
+  }
+}

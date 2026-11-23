@@ -1,0 +1,285 @@
+
+version: 1
+
+detection_policy:
+  minimum_evidence: 2
+  require_dependency_or_config_evidence: true
+  allow_multiple_frameworks: true
+  confidence_levels:
+    high: 0.85
+    medium: 0.65
+    low: 0.40
+  never_infer_from_directory_name_alone: true
+  report_evidence_for_every_detection: true
+
+frameworks:
+
+  django:
+    language: python
+    dependencies:
+      - Django
+    config_files:
+      - manage.py
+      - settings.py
+      - urls.py
+      - asgi.py
+      - wsgi.py
+    patterns:
+      - "*/models.py"
+      - "*/views.py"
+      - "*/admin.py"
+      - "*/apps.py"
+      - "*/migrations/*.py"
+
+  django_rest_framework:
+    language: python
+    dependencies:
+      - djangorestframework
+    config_evidence:
+      - rest_framework
+    patterns:
+      - "*/serializers.py"
+      - "*/permissions.py"
+      - "*/viewsets.py"
+
+  fastapi:
+    language: python
+    dependencies:
+      - fastapi
+    import_evidence:
+      - fastapi
+    patterns:
+      - "main.py"
+      - "app/main.py"
+      - "*/routers/*.py"
+      - "*/dependencies.py"
+
+  flask:
+    language: python
+    dependencies:
+      - Flask
+    import_evidence:
+      - flask
+    patterns:
+      - "app.py"
+      - "wsgi.py"
+      - "*/blueprints/*.py"
+
+  sqlalchemy:
+    language: python
+    dependencies:
+      - SQLAlchemy
+    import_evidence:
+      - sqlalchemy
+    patterns:
+      - "alembic.ini"
+      - "*/alembic/env.py"
+
+  react:
+    language: javascript
+    dependencies:
+      - react
+      - react-dom
+    config_files:
+      - package.json
+    patterns:
+      - "src/**/*.jsx"
+      - "src/**/*.tsx"
+      - "src/**/*.js"
+      - "src/**/*.ts"
+
+  nextjs:
+    language: javascript
+    dependencies:
+      - next
+    config_files:
+      - next.config.js
+      - next.config.ts
+      - next.config.mjs
+    patterns:
+      - "app/layout.tsx"
+      - "app/page.tsx"
+      - "pages/_app.tsx"
+      - "pages/_document.tsx"
+      - "src/app/layout.tsx"
+      - "src/pages/_app.tsx"
+
+  vue:
+    language: javascript
+    dependencies:
+      - vue
+    config_files:
+      - vue.config.js
+      - vite.config.ts
+    patterns:
+      - "src/**/*.vue"
+
+  angular:
+    language: typescript
+    dependencies:
+      - "@angular/core"
+    config_files:
+      - angular.json
+    patterns:
+      - "src/app/**/*.ts"
+
+  express:
+    language: javascript
+    dependencies:
+      - express
+    import_evidence:
+      - express
+    patterns:
+      - "server.js"
+      - "app.js"
+      - "src/routes/**/*.js"
+      - "src/routes/**/*.ts"
+
+  nestjs:
+    language: typescript
+    dependencies:
+      - "@nestjs/core"
+      - "@nestjs/common"
+    config_files:
+      - nest-cli.json
+    patterns:
+      - "src/**/*.module.ts"
+      - "src/**/*.controller.ts"
+      - "src/**/*.service.ts"
+
+  flutter:
+    language: dart
+    dependencies:
+      - flutter
+    config_files:
+      - pubspec.yaml
+    patterns:
+      - "lib/main.dart"
+      - "lib/**/*.dart"
+      - "test/**/*.dart"
+
+  laravel:
+    language: php
+    dependencies:
+      - laravel/framework
+    config_files:
+      - artisan
+      - composer.json
+    patterns:
+      - "routes/web.php"
+      - "routes/api.php"
+      - "app/Models/**/*.php"
+      - "app/Http/Controllers/**/*.php"
+
+  symfony:
+    language: php
+    dependencies:
+      - symfony/framework-bundle
+    config_files:
+      - symfony.lock
+      - config/bundles.php
+    patterns:
+      - "src/Controller/**/*.php"
+      - "config/routes.yaml"
+
+  spring:
+    language: java
+    dependencies:
+      - spring-boot
+      - spring-web
+    config_files:
+      - pom.xml
+      - build.gradle
+      - build.gradle.kts
+    patterns:
+      - "src/main/java/**/*Application.java"
+      - "src/main/java/**/*Controller.java"
+      - "src/main/java/**/*Service.java"
+
+  fastify:
+    language: javascript
+    dependencies:
+      - fastify
+    import_evidence:
+      - fastify
+
+  rails:
+    language: ruby
+    dependencies:
+      - rails
+    config_files:
+      - config/application.rb
+      - config/routes.rb
+    patterns:
+      - "app/controllers/**/*.rb"
+      - "app/models/**/*.rb"
+
+  gin:
+    language: go
+    dependencies:
+      - github.com/gin-gonic/gin
+    patterns:
+      - "main.go"
+      - "cmd/**/*.go"
+      - "internal/**/*.go"
+
+  echo:
+    language: go
+    dependencies:
+      - github.com/labstack/echo
+    patterns:
+      - "main.go"
+      - "internal/**/*.go"
+
+  axum:
+    language: rust
+    dependencies:
+      - axum
+    config_files:
+      - Cargo.toml
+    patterns:
+      - "src/main.rs"
+      - "src/lib.rs"
+
+  actix:
+    language: rust
+    dependencies:
+      - actix-web
+    config_files:
+      - Cargo.toml
+    patterns:
+      - "src/main.rs"
+      - "src/lib.rs"
+
+evidence_sources:
+  dependency_manifests:
+    - pyproject.toml
+    - requirements.txt
+    - Pipfile
+    - package.json
+    - pubspec.yaml
+    - composer.json
+    - pom.xml
+    - build.gradle
+    - build.gradle.kts
+    - go.mod
+    - Cargo.toml
+    - Gemfile
+
+  configuration_files:
+    - manage.py
+    - next.config.js
+    - next.config.ts
+    - angular.json
+    - nest-cli.json
+    - artisan
+    - symfony.lock
+    - Dockerfile
+
+reporting:
+  include_detected_frameworks: true
+  include_confidence: true
+  include_evidence_files: true
+  include_missing_evidence: true
+  distinguish_primary_and_secondary_frameworks: true
+  never_claim_runtime_usage_from_dependency_presence_alone: true

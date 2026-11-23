@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "repository.schema.json",
+  "title": "RepositoryManifest",
+  "type": "object",
+  "required": [
+    "root",
+    "generated_at",
+    "content_fingerprint",
+    "totals",
+    "languages",
+    "frameworks",
+    "entrypoints"
+  ],
+  "properties": {
+    "root": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "git_commit": { "type": ["string", "null"] },
+    "content_fingerprint": { "type": "string" },
+    "totals": {
+      "type": "object",
+      "required": ["discovered", "analyzed", "inventory_only", "skipped"],
+      "properties": {
+        "discovered": { "type": "integer", "minimum": 0 },
+        "analyzed": { "type": "integer", "minimum": 0 },
+        "inventory_only": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "languages": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "categories": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "manifests": { "type": "array", "items": { "type": "object" } },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": { "type": "array", "items": { "type": "string" } }
+    },
+    "frameworks": { "type": "array", "items": { "type": "object" } },
+    "entrypoints": { "type": "array", "items": { "type": "object" } },
+    "test_files": { "type": "array", "items": { "type": "string" } },
+    "migration_files": { "type": "array", "items": { "type": "string" } },
+    "config_files": { "type": "array", "items": { "type": "string" } },
+    "errors": { "type": "array", "items": { "type": "object" } }
+  }
+}

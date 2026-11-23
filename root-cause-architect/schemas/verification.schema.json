@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "verification.schema.json",
+  "title": "VerificationReport",
+  "type": "object",
+  "required": ["overall_status", "executed_checks", "unexecuted_layers", "remaining_risks"],
+  "properties": {
+    "overall_status": { "type": "string", "enum": ["passed", "failed", "partial"] },
+    "executed_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["layer", "command", "exit_code", "summary"],
+        "properties": {
+          "layer": { "type": "string" },
+          "command": { "type": "string" },
+          "exit_code": { "type": "integer" },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "unexecuted_layers": { "type": "array", "items": { "type": "string" } },
+    "remaining_risks": { "type": "array", "items": { "type": "string" } }
+  }
+}

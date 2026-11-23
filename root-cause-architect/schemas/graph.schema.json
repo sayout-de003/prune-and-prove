@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "graph.schema.json",
+  "title": "DependencyGraph",
+  "type": "object",
+  "required": ["root", "stats", "nodes", "edges"],
+  "properties": {
+    "root": { "type": "string" },
+    "stats": {
+      "type": "object",
+      "required": ["node_count", "edge_count", "dynamic_signal_count"],
+      "properties": {
+        "node_count": { "type": "integer", "minimum": 0 },
+        "edge_count": { "type": "integer", "minimum": 0 },
+        "dynamic_signal_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string" },
+          "label": { "type": "string" },
+          "file_path": { "type": ["string", "null"] },
+          "metadata": { "type": "object" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "relation", "provenance"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "relation": { "type": "string" },
+          "provenance": {
+            "type": "string",
+            "enum": ["static_ast", "static_structural", "static_heuristic", "runtime_observed"]
+          },
+          "metadata": { "type": "object" }
+        }
+      }
+    },
+    "dynamic_signals": { "type": "array", "items": { "type": "object" } },
+    "parse_limitations": { "type": "array", "items": { "type": "object" } }
+  }
+}

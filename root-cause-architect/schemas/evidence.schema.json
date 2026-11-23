@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence.schema.json",
+  "title": "EngineeringEvidence",
+  "type": "object",
+  "required": ["id", "kind", "source", "confidence", "summary"],
+  "properties": {
+    "id": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "enum": ["source_code", "static_graph", "runtime_trace", "test_result", "git_history", "config"]
+    },
+    "source": { "type": "string" },
+    "confidence": {
+      "type": "string",
+      "enum": ["PROVEN", "STRONGLY_SUPPORTED", "HYPOTHESIS", "UNKNOWN"]
+    },
+    "summary": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

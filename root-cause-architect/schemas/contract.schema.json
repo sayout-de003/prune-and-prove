@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contract.schema.json",
+  "title": "InterfaceContract",
+  "type": "object",
+  "required": ["name", "kind", "owner_file", "breaking_risk"],
+  "properties": {
+    "name": { "type": "string" },
+    "kind": { "type": "string", "enum": ["http_api", "function_signature", "event", "db_schema", "cli"] },
+    "owner_file": { "type": "string" },
+    "consumers": { "type": "array", "items": { "type": "string" } },
+    "input_shape": { "type": "object" },
+    "output_shape": { "type": "object" },
+    "invariants": { "type": "array", "items": { "type": "string" } },
+    "breaking_risk": { "type": "string", "enum": ["none", "additive", "breaking"] }
+  }
+}

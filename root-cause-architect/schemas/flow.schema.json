@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "flow.schema.json",
+  "title": "ExecutionFlow",
+  "type": "object",
+  "required": ["name", "entrypoint", "steps"],
+  "properties": {
+    "name": { "type": "string" },
+    "entrypoint": { "type": "string" },
+    "provenance": {
+      "type": "string",
+      "enum": ["static_ast", "static_structural", "runtime_observed"]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["location", "inputs", "outputs"],
+        "properties": {
+          "location": { "type": "string" },
+          "caller": { "type": ["string", "null"] },
+          "callee": { "type": "array", "items": { "type": "string" } },
+          "inputs": { "type": "array", "items": { "type": "string" } },
+          "transformations": { "type": "array", "items": { "type": "string" } },
+          "outputs": { "type": "array", "items": { "type": "string" } },
+          "side_effects": { "type": "array", "items": { "type": "string" } },
+          "invariants": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

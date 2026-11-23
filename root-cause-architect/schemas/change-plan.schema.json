@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "change-plan.schema.json",
+  "title": "ImplementationPlan",
+  "type": "object",
+  "required": ["mode", "risk_level", "source_of_truth", "actions", "verification_plan"],
+  "properties": {
+    "mode": { "type": "string", "enum": ["mode_a", "mode_b", "mode_c", "mode_d"] },
+    "risk_level": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "approval_required": { "type": "boolean" },
+    "source_of_truth": { "type": "string" },
+    "contracts_to_preserve": { "type": "array", "items": { "type": "string" } },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["order", "operation", "target", "rationale"],
+        "properties": {
+          "order": { "type": "integer", "minimum": 1 },
+          "operation": { "type": "string", "enum": ["delete", "consolidate", "modify", "create", "migrate"] },
+          "target": { "type": "string" },
+          "rationale": { "type": "string" }
+        }
+      }
+    },
+    "rollback_plan": { "type": "string" },
+    "verification_plan": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,312 @@
+
+version: 1
+
+defaults:
+  encoding: utf-8
+  fallback_encoding: latin-1
+  follow_symlinks: false
+  unknown_extension_policy: preserve_as_unknown
+  detect_language_from_content: true
+
+languages:
+
+  python:
+    extensions:
+      - .py
+      - .pyw
+      - .pyi
+    filenames:
+      - SConstruct
+      - wsgi.py
+      - asgi.py
+      - manage.py
+    parser: python_ast
+    priority: p0
+
+  javascript:
+    extensions:
+      - .js
+      - .mjs
+      - .cjs
+    filenames:
+      - Gruntfile.js
+      - gulpfile.js
+    parser: typescript_compiler_api
+    priority: p0
+
+  typescript:
+    extensions:
+      - .ts
+      - .mts
+      - .cts
+    parser: typescript_compiler_api
+    priority: p0
+
+  javascript_react:
+    extensions:
+      - .jsx
+    parser: typescript_compiler_api
+    base_language: javascript
+    priority: p0
+
+  typescript_react:
+    extensions:
+      - .tsx
+    parser: typescript_compiler_api
+    base_language: typescript
+    priority: p0
+
+  dart:
+    extensions:
+      - .dart
+    parser: dart_analyzer
+    priority: p0
+
+  java:
+    extensions:
+      - .java
+    parser: javaparser
+    priority: p1
+
+  go:
+    extensions:
+      - .go
+    parser: go_ast
+    priority: p1
+
+  php:
+    extensions:
+      - .php
+      - .phtml
+      - .php3
+      - .php4
+      - .php5
+    parser: php_parser
+    priority: p1
+
+  rust:
+    extensions:
+      - .rs
+    parser: rust_analyzer
+    priority: p2
+
+  ruby:
+    extensions:
+      - .rb
+      - .rake
+      - .gemspec
+    parser: ruby_parser
+    priority: p2
+
+  c:
+    extensions:
+      - .c
+      - .h
+    parser: tree_sitter
+    priority: p2
+
+  cpp:
+    extensions:
+      - .cc
+      - .cpp
+      - .cxx
+      - .hpp
+      - .hh
+      - .hxx
+    parser: tree_sitter
+    priority: p2
+
+  csharp:
+    extensions:
+      - .cs
+    parser: tree_sitter
+    priority: p2
+
+  kotlin:
+    extensions:
+      - .kt
+      - .kts
+    parser: tree_sitter
+    priority: p2
+
+  swift:
+    extensions:
+      - .swift
+    parser: tree_sitter
+    priority: p2
+
+  scala:
+    extensions:
+      - .scala
+      - .sc
+    parser: tree_sitter
+    priority: p2
+
+  shell:
+    extensions:
+      - .sh
+      - .bash
+      - .zsh
+    filenames:
+      - Makefile
+      - Justfile
+    parser: text_structural
+    priority: p2
+
+  sql:
+    extensions:
+      - .sql
+    parser: sqlglot
+    priority: p1
+
+  html:
+    extensions:
+      - .html
+      - .htm
+    parser: html_parser
+    priority: p1
+
+  css:
+    extensions:
+      - .css
+      - .scss
+      - .sass
+      - .less
+    parser: css_parser
+    priority: p2
+
+  json:
+    extensions:
+      - .json
+      - .jsonc
+    parser: json_parser
+    priority: p1
+
+  yaml:
+    extensions:
+      - .yaml
+      - .yml
+    parser: yaml_parser
+    priority: p1
+
+  xml:
+    extensions:
+      - .xml
+      - .xsd
+      - .xsl
+    parser: xml_parser
+    priority: p2
+
+  markdown:
+    extensions:
+      - .md
+      - .mdx
+    parser: markdown_parser
+    priority: p2
+
+  dockerfile:
+    filenames:
+      - Dockerfile
+      - Containerfile
+    parser: text_structural
+    priority: p1
+
+  terraform:
+    extensions:
+      - .tf
+      - .tfvars
+    parser: hcl_parser
+    priority: p2
+
+file_categories:
+
+  source:
+    description: Application and library implementation files
+
+  test:
+    directory_names:
+      - test
+      - tests
+      - __tests__
+      - spec
+      - specs
+    filename_patterns:
+      - "test_*.py"
+      - "*_test.py"
+      - "*.test.js"
+      - "*.test.jsx"
+      - "*.test.ts"
+      - "*.test.tsx"
+      - "*.spec.js"
+      - "*.spec.jsx"
+      - "*.spec.ts"
+      - "*.spec.tsx"
+      - "*_test.go"
+      - "*Test.java"
+      - "*Tests.cs"
+      - "*_test.dart"
+      - "*_spec.rb"
+
+  configuration:
+    filenames:
+      - pyproject.toml
+      - setup.py
+      - setup.cfg
+      - requirements.txt
+      - Pipfile
+      - package.json
+      - tsconfig.json
+      - composer.json
+      - pubspec.yaml
+      - Cargo.toml
+      - go.mod
+      - Gemfile
+      - Dockerfile
+      - docker-compose.yml
+      - docker-compose.yaml
+      - Makefile
+      - .env.example
+      - .gitignore
+
+  documentation:
+    extensions:
+      - .md
+      - .mdx
+      - .rst
+      - .txt
+      - .adoc
+
+  migration:
+    directory_names:
+      - migrations
+      - migration
+      - alembic
+      - versions
+
+  generated:
+    filename_patterns:
+      - "*.generated.*"
+      - "*.g.*"
+      - "*.freezed.dart"
+      - "*.gr.dart"
+      - "*.mocks.dart"
+      - "*.pb.go"
+      - "*.pb.js"
+      - "*.pb.ts"
+
+classification_rules:
+  - Tests and migrations must never be automatically classified as disposable.
+  - Generated files must remain discoverable in the repository inventory.
+  - Configuration files must be preserved for architecture analysis.
+  - A file may belong to multiple categories.
+  - Unknown files must remain in the inventory.
+  - Extension matching must be case-insensitive.
+  - Filename matching must support exact names and glob patterns.
+  - Classification must not modify repository files.
+
+parser_policy:
+  native_ast_preferred: true
+  tree_sitter_is_structural_fallback: true
+  semantic_resolution_required_for_confident_call_graphs: true
+  unsupported_parser_policy: retain_file_and_report_limitation
+  never_claim_semantic_analysis_without_semantic_evidence: true

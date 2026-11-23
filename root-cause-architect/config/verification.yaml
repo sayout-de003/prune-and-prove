@@ -1,0 +1,34 @@
+version: 1
+
+policy:
+  evidence_required: true
+  report_exact_commands: true
+  report_unexecuted_layers: true
+  static_analysis_does_not_prove_runtime: true
+  unit_pass_does_not_prove_integration: true
+
+layers:
+  static:
+    required: true
+    proves: syntax, types, and structural validity
+  unit:
+    required: true
+    proves: isolated function and module behavior
+  contract:
+    required: adaptive
+    proves: API, schema, and interface compatibility
+  integration:
+    required: adaptive
+    proves: cross-module and service interaction
+  database:
+    required: adaptive
+    proves: persistence, transactions, and migrations
+  regression:
+    required: true
+    proves: existing behavior preserved across callers
+  security:
+    required: adaptive
+    proves: auth, permissions, and input boundaries
+  e2e:
+    required: adaptive
+    proves: complete user journey behavior

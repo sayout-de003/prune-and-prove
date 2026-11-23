@@ -1,0 +1,28 @@
+version: 1
+
+gates:
+  diagnosis_before_edit:
+    enforced: true
+    minimum_evidence_level: STRONGLY_SUPPORTED
+  no_band_aid_patches:
+    enforced: true
+    block_symptom_masking: true
+    block_silent_exception_suppression: true
+    block_test_overfitting: true
+  deletion_safety:
+    enforced: true
+    require_static_and_dynamic_check: true
+    block_unverified_protected_deletion: true
+  graph_integrity:
+    enforced: true
+    allow_dangling_edges: false
+    require_edge_provenance: true
+  verification_completeness:
+    enforced: true
+    require_command_evidence: true
+    allow_unreported_skips: false
+  independent_review:
+    enforced: true
+    required_for_modes:
+      - mode_b
+      - mode_d
