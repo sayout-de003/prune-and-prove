@@ -337,8 +337,39 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
     background: var(--bg); z-index: 100; padding: 24px; text-align: center;
   }
+  .nav-dock {
+    position: fixed; right: 16px; bottom: 16px; z-index: 19;
+    display: flex; flex-direction: column; gap: 6px;
+    background: var(--panel); border: 1px solid var(--panel-border);
+    backdrop-filter: blur(12px); border-radius: 10px; padding: 6px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    transition: right 0.2s ease;
+  }
+  .nav-dock.shifted { right: 364px; }
+  .nav-btn {
+    background: rgba(30,41,59,0.9); border: 1px solid var(--panel-border); color: var(--text);
+    padding: 6px 10px; border-radius: 7px; cursor: pointer; font-size: 12px; font-weight: 700;
+    min-width: 40px; text-align: center;
+  }
+  .nav-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .controls-hint {
+    position: fixed; left: 300px; bottom: 14px; z-index: 14;
+    background: rgba(12, 18, 32, 0.78); border: 1px solid var(--panel-border);
+    color: var(--muted); padding: 5px 11px; border-radius: 999px; font-size: 11px;
+    pointer-events: none; backdrop-filter: blur(8px);
+  }
+  .edge-hero {
+    display: flex; flex-direction: column; gap: 6px; padding: 10px;
+    background: rgba(15,23,42,0.85); border: 1px solid rgba(34,211,238,0.35); border-radius: 8px;
+  }
+  .edge-arrow-row {
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--cyan);
+    padding: 2px 0;
+  }
   @media (max-width: 1100px) {
     .stepper-dock { left: 12px; right: 12px; }
+    .controls-hint { display: none; }
+    .nav-dock.shifted { right: 16px; }
   }
 </style>
 </head>
@@ -441,11 +472,22 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="step-trace-list" id="step-trace-list"></div>
 </div>
 
+<div class="nav-dock" id="nav-dock">
+  <button class="nav-btn" id="nav-zoom-in" title="Zoom In">＋</button>
+  <button class="nav-btn" id="nav-zoom-out" title="Zoom Out">－</button>
+  <button class="nav-btn" id="nav-fit" title="Fit Graph to Screen">Fit</button>
+  <button class="nav-btn" id="nav-unpin" title="Release Pinned Nodes">Unpin</button>
+  <button class="nav-btn" id="nav-clear" title="Clear Selection / Exit Isolation">Clear</button>
+</div>
+
+<div class="controls-hint" id="controls-hint">
+  Left-Drag: Rotate • Right-Drag: Pan • Scroll: Zoom • Drag Node: Move &amp; Pin • Click Node/Edge: Inspect • Dbl-Click Node: Open Connections
+</div>
+
 <script id="rca-graph-data" type="application/json">__GRAPH_DATA__</script>
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js';document.head.appendChild(s);"></script>
 <script>
-(function() {
+window.addEventListener("load", function() {
   const DATA = JSON.parse(document.getElementById("rca-graph-data").textContent);
   if (typeof ForceGraph3D === "undefined") {
     document.getElementById("offline-banner").style.display = "flex";
@@ -506,7 +548,12 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     mode: isLargeRepo ? "file" : (DATA.stats.functions > 0 ? "full" : "file"),
     colorBy: "kind",
     selectedId: null,
-    blastFocus: false,
+    selectedEdge: null,
+    selectedEdgeKey: null,
+    isolatedNodeId: null,
+    isolatedDepth: 1,
+    lastClickId: null,
+    lastClickTime: 0,
     visibleKinds: new Set(["route", "file", "function", "method", "class", "interface", "type", "test", "external"]),
     visibleRels: new Set(["ROUTES_TO", "CALLS", "FILE_CALLS", "IMPORTS", "DEFINES", "INHERITS", "TESTS"]),
     activePipeline: null,
@@ -518,6 +565,7 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     stepHighlightEdges: new Set(),
     upstreamSet: new Set(),
     downstreamSet: new Set(),
+    definedSet: new Set(),
   };
 
   // Populate top HUD stats
@@ -651,20 +699,26 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     return String(str ?? "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
-  // Initialize 3D Force Graph
+  // Initialize 3D Force Graph with smooth OrbitControls, node dragging, and node+edge interaction
   const container = document.getElementById("graph-3d");
-  const Graph = ForceGraph3D()(container)
+  container.style.cursor = "grab";
+  const Graph = ForceGraph3D({ controlType: "orbit" })(container)
     .backgroundColor("#060913")
     .showNavInfo(false)
+    .enableNavigationControls(true)
+    .enableNodeDrag(true)
+    .linkHoverPrecision(6)
     .nodeLabel(n => {
       const filePart = n.file ? `<div style="color:#94a3b8;font-size:11px;">${escapeHtml(n.file)}${n.startLine ? ":" + n.startLine : ""}</div>` : "";
       return `<div style="background:rgba(10,15,28,0.95);border:1px solid rgba(148,163,184,0.25);padding:6px 9px;border-radius:7px;font-family:monospace;font-size:12px;">
         <div style="color:${KIND_COLORS[n.kind] || '#e2e8f0'};font-weight:700;">[${n.kind}] ${escapeHtml(n.label)}</div>
         ${filePart}
+        <div style="color:#64748b;font-size:10px;margin-top:3px;">Click: Inspect &amp; Zoom • Dbl-Click: Open Connections • Drag: Move</div>
       </div>`;
     })
     .nodeVal(n => {
-      if (n.id === state.selectedId) return 14;
+      if (n.id === state.selectedId) return 15;
+      if (state.selectedEdge && (n.id === edgeSrc(state.selectedEdge) || n.id === edgeTgt(state.selectedEdge))) return 13;
       if (state.stepHighlightNodes.has(n.id)) return 11;
       if (n.kind === "route") return 9;
       if (n.kind === "file" || n.kind === "test") return Math.min(10, 4 + Math.sqrt((n.inDeg || 0) + (n.outDeg || 0)));
@@ -674,13 +728,20 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
       if (state.mode === "pipeline" && state.activePipeline) {
         if (state.stepHighlightNodes.has(n.id)) return "#22d3ee";
         if (state.activeNodeIds.has(n.id)) return "#38bdf8";
-        return "rgba(71,85,105,0.22)";
+        return "rgba(71,85,105,0.20)";
+      }
+      if (state.selectedEdge) {
+        const s = edgeSrc(state.selectedEdge), t = edgeTgt(state.selectedEdge);
+        if (n.id === s) return "#fbbf24";
+        if (n.id === t) return "#22d3ee";
+        return "rgba(71,85,105,0.16)";
       }
       if (state.selectedId) {
         if (n.id === state.selectedId) return "#ffffff";
         if (state.upstreamSet.has(n.id)) return "#fbbf24";
         if (state.downstreamSet.has(n.id)) return "#22d3ee";
-        if (state.blastFocus) return "rgba(71,85,105,0.18)";
+        if (state.definedSet.has(n.id)) return "#c084fc";
+        return "rgba(71,85,105,0.16)";
       }
       return state.colorBy === "group" ? colorForGroup(n.group) : (KIND_COLORS[n.kind] || "#94a3b8");
     })
@@ -691,62 +752,132 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
         if (state.activeNodeIds.has(edgeSrc(l)) && state.activeNodeIds.has(edgeTgt(l))) return "rgba(56,189,248,0.45)";
         return "rgba(71,85,105,0.08)";
       }
-      if (state.selectedId && state.blastFocus) {
+      if (state.selectedEdgeKey) {
+        return ek === state.selectedEdgeKey ? "#22d3ee" : "rgba(71,85,105,0.08)";
+      }
+      if (state.selectedId) {
         const s = edgeSrc(l), t = edgeTgt(l);
-        if (s === state.selectedId || t === state.selectedId) return REL_COLORS[l.relation] || "#38bdf8";
+        if (s === state.selectedId) return l.relation === "DEFINES" ? "#c084fc" : "#22d3ee";
+        if (t === state.selectedId) return "#fbbf24";
         return "rgba(71,85,105,0.08)";
       }
       return REL_COLORS[l.relation] || "#475569";
     })
-    .linkOpacity(0.55)
+    .linkOpacity(0.62)
     .linkWidth(l => {
       const ek = `${edgeSrc(l)}|${l.relation}|${edgeTgt(l)}`;
+      if (ek === state.selectedEdgeKey) return 3.6;
       if (state.stepHighlightEdges.has(ek)) return 2.8;
-      if (l.relation === "FILE_CALLS") return Math.min(3.5, 1 + Math.log2(1 + (l.count || 1)));
-      if (l.relation === "CALLS" || l.relation === "ROUTES_TO") return 1.3;
-      return 0.7;
+      if (state.selectedId && (edgeSrc(l) === state.selectedId || edgeTgt(l) === state.selectedId)) return 2.4;
+      if (l.relation === "FILE_CALLS") return Math.min(3.5, 1.2 + Math.log2(1 + (l.count || 1)));
+      if (l.relation === "CALLS" || l.relation === "ROUTES_TO") return 1.4;
+      return 0.85;
     })
-    .linkDirectionalArrowLength(l => (l.relation === "DEFINES" ? 0 : 4.5))
+    .linkDirectionalArrowLength(l => (l.relation === "DEFINES" ? 0 : 4.8))
     .linkDirectionalArrowRelPos(0.95)
     .linkDirectionalParticles(l => {
       const ek = `${edgeSrc(l)}|${l.relation}|${edgeTgt(l)}`;
+      if (ek === state.selectedEdgeKey) return 5;
       if (state.stepHighlightEdges.has(ek)) return 4;
-      if (state.selectedId && (edgeSrc(l) === state.selectedId || edgeTgt(l) === state.selectedId)) return 2;
+      if (state.selectedId && (edgeSrc(l) === state.selectedId || edgeTgt(l) === state.selectedId)) return 3;
       if (state.mode === "function" && (l.relation === "CALLS" || l.relation === "ROUTES_TO")) return 1;
       return 0;
     })
-    .linkDirectionalParticleSpeed(0.008)
-    .linkDirectionalParticleWidth(2.6)
+    .linkDirectionalParticleSpeed(0.009)
+    .linkDirectionalParticleWidth(2.8)
     .linkLabel(l => {
       if (l.relation === "FILE_CALLS") {
         const sample = (l.calls || []).slice(0, 6).map(c => `${escapeHtml(c.callerLabel)} → ${escapeHtml(c.calleeLabel)}`).join("<br/>");
         return `<div style="background:rgba(10,15,28,0.95);border:1px solid #22d3ee;padding:6px 9px;border-radius:7px;font-family:monospace;font-size:11px;">
-          <div style="color:#22d3ee;font-weight:700;">${l.count} cross-file function call(s)</div>
+          <div style="color:#22d3ee;font-weight:700;">${l.count} cross-file function call(s) — Click to inspect</div>
           <div style="margin-top:4px;color:#cbd5e1;">${sample}</div>
         </div>`;
       }
       return `<div style="background:rgba(10,15,28,0.95);border:1px solid rgba(148,163,184,0.25);padding:4px 8px;border-radius:6px;font-family:monospace;font-size:11px;">
-        ${l.relation} (${l.provenance || "static"})${l.line ? " @ L" + l.line : ""}
+        ${l.relation} (${l.provenance || "static"})${l.line ? " @ L" + l.line : ""} — Click to inspect
       </div>`;
     })
-    .onNodeClick(n => selectNode(n.id, true))
+    .onNodeHover(n => { container.style.cursor = n ? "pointer" : "grab"; })
+    .onLinkHover(l => { container.style.cursor = l ? "pointer" : "grab"; })
+    .onNodeDragEnd(node => {
+      node.fx = node.x;
+      node.fy = node.y;
+      node.fz = node.z;
+    })
+    .onNodeClick(n => {
+      const now = Date.now();
+      const isDouble = state.lastClickId === n.id && (now - state.lastClickTime) < 350;
+      state.lastClickId = n.id;
+      state.lastClickTime = now;
+      if (isDouble) {
+        openNodeConnections(n.id, state.isolatedDepth);
+      } else {
+        selectNode(n.id, true);
+      }
+    })
+    .onLinkClick(l => selectEdge(l, true))
     .onBackgroundClick(() => {
       if (state.mode !== "pipeline") {
-        state.selectedId = null;
-        state.blastFocus = false;
-        state.upstreamSet.clear();
-        state.downstreamSet.clear();
-        document.getElementById("inspector").classList.remove("open");
-        refreshColors();
+        clearSelection(false);
       }
     });
 
   function edgeSrc(l) { return typeof l.source === "object" ? l.source.id : l.source; }
   function edgeTgt(l) { return typeof l.target === "object" ? l.target.id : l.target; }
 
+  function collectNeighborhood(seedId, maxHops = 1) {
+    const keepIds = new Set([seedId]);
+    const seedNode = nodeMap.get(seedId);
+    let frontier = [seedId];
+    // Opening a file node also includes all symbols defined inside it as hop-0 seeds
+    if (seedNode && (seedNode.kind === "file" || seedNode.kind === "test")) {
+      for (const e of (outEdges.get(seedId) || [])) {
+        if (e.relation === "DEFINES") {
+          keepIds.add(e.target);
+          frontier.push(e.target);
+        }
+      }
+    }
+    for (let hop = 0; hop < maxHops; hop++) {
+      const next = [];
+      for (const id of frontier) {
+        for (const e of (outEdges.get(id) || [])) {
+          if (!keepIds.has(e.target) && nodeMap.has(e.target)) {
+            keepIds.add(e.target);
+            next.push(e.target);
+          }
+        }
+        for (const e of (inEdges.get(id) || [])) {
+          if (!keepIds.has(e.source) && nodeMap.has(e.source)) {
+            keepIds.add(e.source);
+            next.push(e.source);
+          }
+        }
+      }
+      frontier = next;
+      if (!frontier.length) break;
+    }
+    // Include owning files for any connected symbols so file context stays visible
+    for (const id of Array.from(keepIds)) {
+      const f = nodeMap.get(id)?.file;
+      if (f && nodeMap.has(`file:${f}`)) keepIds.add(`file:${f}`);
+    }
+    return keepIds;
+  }
+
   function buildSceneData() {
     let nodes = [];
     let links = [];
+
+    if (state.isolatedNodeId && state.mode !== "pipeline") {
+      const keepIds = collectNeighborhood(state.isolatedNodeId, state.isolatedDepth);
+      nodes = Array.from(keepIds).map(id => ({ ...nodeMap.get(id) })).filter(Boolean);
+      const ids = new Set(nodes.map(n => n.id));
+      links = DATA.edges
+        .filter(e => ids.has(e.source) && ids.has(e.target))
+        .map(e => ({ ...e }));
+      return { nodes, links };
+    }
 
     if (state.mode === "file") {
       const keep = new Set(["file", "test", "route", "external"]);
@@ -835,43 +966,211 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
       .linkDirectionalParticles(Graph.linkDirectionalParticles());
   }
 
-  function flyToNode(nodeId) {
+  function setInspectorOpen(open) {
+    document.getElementById("inspector").classList.toggle("open", open);
+    document.getElementById("nav-dock").classList.toggle("shifted", open);
+  }
+
+  function clearSelection(exitIsolation = true) {
+    state.selectedId = null;
+    state.selectedEdge = null;
+    state.selectedEdgeKey = null;
+    state.upstreamSet.clear();
+    state.downstreamSet.clear();
+    state.definedSet.clear();
+    setInspectorOpen(false);
+    if (exitIsolation && state.isolatedNodeId) {
+      state.isolatedNodeId = null;
+      rebuildScene();
+    } else {
+      refreshColors();
+    }
+  }
+
+  function flyToNode(nodeId, dist = 110) {
     const gData = Graph.graphData();
     const target = gData.nodes.find(n => n.id === nodeId);
     if (!target || target.x === undefined) return;
-    const dist = 140;
     const hyp = Math.hypot(target.x, target.y, target.z) || 1;
     const ratio = 1 + dist / hyp;
     Graph.cameraPosition(
       { x: target.x * ratio, y: target.y * ratio, z: target.z * ratio },
       target,
-      900
+      750
     );
+  }
+
+  function flyToEdge(link) {
+    const gData = Graph.graphData();
+    const s = typeof link.source === "object" ? link.source : gData.nodes.find(n => n.id === link.source);
+    const t = typeof link.target === "object" ? link.target : gData.nodes.find(n => n.id === link.target);
+    if (!s || !t || s.x === undefined || t.x === undefined) return;
+    const mid = { x: (s.x + t.x) / 2, y: (s.y + t.y) / 2, z: (s.z + t.z) / 2 };
+    const span = Math.hypot(t.x - s.x, t.y - s.y, t.z - s.z);
+    const dist = Math.max(120, span * 1.45);
+    const hyp = Math.hypot(mid.x, mid.y, mid.z) || 1;
+    const ratio = 1 + dist / hyp;
+    Graph.cameraPosition(
+      { x: mid.x * ratio, y: mid.y * ratio, z: mid.z * ratio },
+      mid,
+      750
+    );
+  }
+
+  function zoomCamera(factor) {
+    const cam = Graph.camera();
+    const controls = Graph.controls();
+    if (!cam || !controls) return;
+    const target = controls.target || { x: 0, y: 0, z: 0 };
+    const dx = cam.position.x - target.x;
+    const dy = cam.position.y - target.y;
+    const dz = cam.position.z - target.z;
+    Graph.cameraPosition(
+      { x: target.x + dx * factor, y: target.y + dy * factor, z: target.z + dz * factor },
+      target,
+      260
+    );
+  }
+
+  function openNodeConnections(nodeId, depth = 1) {
+    const node = nodeMap.get(nodeId);
+    if (!node) return;
+    state.isolatedNodeId = nodeId;
+    state.isolatedDepth = depth;
+    state.selectedId = nodeId;
+    state.selectedEdge = null;
+    state.selectedEdgeKey = null;
+    state.upstreamSet.clear();
+    state.downstreamSet.clear();
+    state.definedSet.clear();
+    (inEdges.get(nodeId) || []).forEach(e => state.upstreamSet.add(e.source));
+    (outEdges.get(nodeId) || []).forEach(e => {
+      if (e.relation === "DEFINES") state.definedSet.add(e.target);
+      else state.downstreamSet.add(e.target);
+    });
+    rebuildScene();
+    renderInspector(node);
+    setTimeout(() => Graph.zoomToFit(650, 70), 350);
+  }
+
+  function selectEdge(link, fly = false) {
+    const srcId = edgeSrc(link);
+    const tgtId = edgeTgt(link);
+    const srcNode = nodeMap.get(srcId);
+    const tgtNode = nodeMap.get(tgtId);
+    if (!srcNode || !tgtNode) return;
+
+    state.selectedId = null;
+    state.selectedEdge = link;
+    state.selectedEdgeKey = `${srcId}|${link.relation}|${tgtId}`;
+    state.upstreamSet.clear();
+    state.downstreamSet.clear();
+    state.definedSet.clear();
+
+    setInspectorOpen(true);
+    const badge = document.getElementById("ins-kind");
+    badge.textContent = link.relation;
+    badge.style.background = (REL_COLORS[link.relation] || "#22d3ee") + "30";
+    badge.style.color = REL_COLORS[link.relation] || "#22d3ee";
+    document.getElementById("ins-title").textContent = `${srcNode.label} → ${tgtNode.label}`;
+    document.getElementById("ins-file").textContent =
+      link.relation === "FILE_CALLS"
+        ? `${link.count} cross-file function call(s)`
+        : `${srcNode.file || srcId}${link.line ? " @ L" + link.line : ""} • ${link.provenance || "static"}`;
+
+    const body = document.getElementById("ins-body");
+    const callsHtml = link.relation === "FILE_CALLS" && link.calls?.length
+      ? `<div>
+          <div class="panel-title">Cross-File Function Calls (${link.count})</div>
+          <div class="link-list" id="edge-calls-list"></div>
+        </div>`
+      : "";
+
+    body.innerHTML = `
+      <div class="edge-hero">
+        <div class="link-item" id="edge-src-card">
+          <div style="font-size:10px;color:var(--amber);font-weight:700;">SOURCE (${srcNode.kind})</div>
+          <div>${escapeHtml(srcNode.label)}</div>
+          <div style="font-size:10px;color:var(--muted);">${escapeHtml(srcNode.file || srcNode.id)}</div>
+        </div>
+        <div class="edge-arrow-row">
+          <span>── ${escapeHtml(link.relation)} ──▶</span>
+          ${link.provenance ? `<span class="prov-tag prov-${link.provenance}">${escapeHtml(link.provenance)}</span>` : ""}
+          ${link.line ? `<span style="color:var(--muted);margin-left:auto;">L${link.line}</span>` : ""}
+        </div>
+        <div class="link-item" id="edge-tgt-card">
+          <div style="font-size:10px;color:var(--cyan);font-weight:700;">TARGET (${tgtNode.kind})</div>
+          <div>${escapeHtml(tgtNode.label)}</div>
+          <div style="font-size:10px;color:var(--muted);">${escapeHtml(tgtNode.file || tgtNode.id)}</div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn-primary" id="edge-btn-trace">Trace Pipeline from Source</button>
+        <button class="hud-btn" id="edge-btn-open-src">Open Source Connections</button>
+        <button class="hud-btn" id="edge-btn-open-tgt">Open Target Connections</button>
+      </div>
+      ${link.rawCallee ? `<div style="font-family:var(--mono);font-size:11px;color:var(--muted);">call expression: <code>${escapeHtml(link.rawCallee)}</code></div>` : ""}
+      ${callsHtml}
+    `;
+
+    document.getElementById("edge-src-card").onclick = () => selectNode(srcId, true);
+    document.getElementById("edge-tgt-card").onclick = () => selectNode(tgtId, true);
+    document.getElementById("edge-btn-trace").onclick = () => {
+      const p = tracePipelineClient(srcId, 8);
+      if (p) startPipeline(p);
+    };
+    document.getElementById("edge-btn-open-src").onclick = () => openNodeConnections(srcId, 1);
+    document.getElementById("edge-btn-open-tgt").onclick = () => openNodeConnections(tgtId, 1);
+
+    if (link.relation === "FILE_CALLS" && link.calls?.length) {
+      const listEl = document.getElementById("edge-calls-list");
+      link.calls.forEach(c => {
+        const row = document.createElement("div");
+        row.className = "link-item";
+        row.innerHTML = `
+          <div><span style="color:var(--amber);">${escapeHtml(c.callerLabel)}</span> → <span style="color:var(--cyan);">${escapeHtml(c.calleeLabel)}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;color:var(--muted);">${c.line ? "Line " + c.line : ""}</span>
+            <span class="prov-tag prov-${c.provenance}">${c.provenance}</span>
+          </div>`;
+        row.onclick = () => openNodeConnections(c.caller, 1);
+        listEl.appendChild(row);
+      });
+    }
+
+    refreshColors();
+    if (fly) setTimeout(() => flyToEdge(link), 80);
   }
 
   function selectNode(nodeId, fly = false) {
     const node = nodeMap.get(nodeId);
     if (!node) return;
     state.selectedId = nodeId;
+    state.selectedEdge = null;
+    state.selectedEdgeKey = null;
     state.upstreamSet.clear();
     state.downstreamSet.clear();
+    state.definedSet.clear();
     (inEdges.get(nodeId) || []).forEach(e => state.upstreamSet.add(e.source));
-    (outEdges.get(nodeId) || []).forEach(e => state.downstreamSet.add(e.target));
+    (outEdges.get(nodeId) || []).forEach(e => {
+      if (e.relation === "DEFINES") state.definedSet.add(e.target);
+      else state.downstreamSet.add(e.target);
+    });
 
     // If node is not in current filtered scene, switch to Full 3D so user can see it
     const inScene = Graph.graphData().nodes.some(n => n.id === nodeId);
     if (!inScene && state.mode !== "pipeline") {
+      state.isolatedNodeId = null;
       state.mode = "full";
       rebuildScene();
     }
     renderInspector(node);
     refreshColors();
-    if (fly) setTimeout(() => flyToNode(nodeId), 120);
+    if (fly) setTimeout(() => flyToNode(nodeId), 100);
   }
 
   function renderInspector(node) {
-    const ins = document.getElementById("inspector");
-    ins.classList.add("open");
+    setInspectorOpen(true);
     const badge = document.getElementById("ins-kind");
     badge.textContent = node.kind;
     badge.style.background = (KIND_COLORS[node.kind] || "#64748b") + "30";
@@ -885,12 +1184,15 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
     const outgoing = (outEdges.get(node.id) || []).filter(e => e.relation !== "DEFINES");
     const defined = (outEdges.get(node.id) || []).filter(e => e.relation === "DEFINES");
     const warnings = node.file ? (signalsByFile.get(node.file) || []) : [];
+    const isIsolatedHere = state.isolatedNodeId === node.id;
 
     const body = document.getElementById("ins-body");
     body.innerHTML = `
       <div class="action-row">
-        <button class="btn-primary" id="ins-btn-trace">Trace Pipeline from Here</button>
-        <button class="hud-btn" id="ins-btn-blast">${state.blastFocus ? "Unfocus Blast" : "Focus Blast"}</button>
+        <button class="btn-primary" id="ins-btn-open">${isIsolatedHere ? "Show Full Graph" : "Open Connections"}</button>
+        ${isIsolatedHere ? `<button class="hud-btn" id="ins-btn-depth">${state.isolatedDepth === 1 ? "Expand 2-Hop" : "1-Hop Only"}</button>` : ""}
+        <button class="hud-btn" id="ins-btn-trace">Trace Pipeline</button>
+        <button class="hud-btn" id="ins-btn-zoom">Zoom</button>
       </div>
       ${node.params?.length ? `<div style="font-family:var(--mono);font-size:11px;color:var(--muted);">params: (${escapeHtml(node.params.join(", "))})</div>` : ""}
       ${warnings.length ? `<div><div class="panel-title" style="color:var(--amber);">Dynamic / Reflection Warnings (${warnings.length})</div>${warnings.map(w => `<div class="link-item" style="border-color:rgba(251,191,36,0.35);"><span>${escapeHtml(w.kind)} @ L${w.line}</span><span style="color:var(--muted);">${escapeHtml(w.detail)}</span></div>`).join("")}</div>` : ""}
@@ -905,15 +1207,26 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
       ${defined.length ? `<div><div class="panel-title">Defined Symbols (${defined.length})</div><div class="link-list" id="ins-def-list"></div></div>` : ""}
     `;
 
+    document.getElementById("ins-btn-open").onclick = () => {
+      if (isIsolatedHere) {
+        state.isolatedNodeId = null;
+        rebuildScene();
+        renderInspector(node);
+        setTimeout(() => flyToNode(node.id, 130), 250);
+      } else {
+        openNodeConnections(node.id, 1);
+      }
+    };
+    const depthBtn = document.getElementById("ins-btn-depth");
+    if (depthBtn) {
+      depthBtn.onclick = () => openNodeConnections(node.id, state.isolatedDepth === 1 ? 2 : 1);
+    }
     document.getElementById("ins-btn-trace").onclick = () => {
+      state.isolatedNodeId = null;
       const p = tracePipelineClient(node.id, 8);
       if (p) startPipeline(p);
     };
-    document.getElementById("ins-btn-blast").onclick = () => {
-      state.blastFocus = !state.blastFocus;
-      renderInspector(node);
-      refreshColors();
-    };
+    document.getElementById("ins-btn-zoom").onclick = () => flyToNode(node.id, 85);
 
     function populateList(elId, edges, isOut) {
       const el = document.getElementById(elId);
@@ -1105,9 +1418,20 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
   document.getElementById("btn-toggle-left").onclick = () => {
     document.getElementById("sidebar-left").classList.toggle("collapsed");
   };
-  document.getElementById("btn-close-inspector").onclick = () => {
-    document.getElementById("inspector").classList.remove("open");
+  document.getElementById("btn-close-inspector").onclick = () => clearSelection(false);
+  document.getElementById("nav-zoom-in").onclick = () => zoomCamera(0.72);
+  document.getElementById("nav-zoom-out").onclick = () => zoomCamera(1.38);
+  document.getElementById("nav-fit").onclick = () => Graph.zoomToFit(600, 60);
+  document.getElementById("nav-unpin").onclick = () => {
+    Graph.graphData().nodes.forEach(n => { n.fx = undefined; n.fy = undefined; n.fz = undefined; });
+    Graph.d3ReheatSimulation();
   };
+  document.getElementById("nav-clear").onclick = () => clearSelection(true);
+
+  // Also exit isolation when switching view modes
+  document.querySelectorAll(".mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => { state.isolatedNodeId = null; }, true);
+  });
 
   // Search autocomplete
   const searchInput = document.getElementById("search-input");
@@ -1140,7 +1464,7 @@ _HTML_TEMPLATE = r"""<!DOCTYPE html>
   renderPipelineList();
   rebuildScene();
   setTimeout(() => Graph.zoomToFit(700, 80), 800);
-})();
+});
 </script>
 </body>
 </html>

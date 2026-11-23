@@ -81,10 +81,15 @@ class KnowledgeGraphTests(unittest.TestCase):
         self.assertTrue(len(discovered) >= 1)
         self.assertEqual(discovered[0]["kind"], "route")
 
-        # Interactive 3D HTML export contains embedded deterministic JSON payload
+        # Interactive 3D HTML export contains embedded deterministic JSON payload and full interaction hooks
         html = GraphExporter.to_interactive_3d_html(graph, validation=validation.to_dict())
         self.assertIn("<!DOCTYPE html>", html)
         self.assertIn("3d-force-graph", html)
+        self.assertNotIn("three@0.160.0/build/three.min.js", html)
+        self.assertIn('controlType: "orbit"', html)
+        self.assertIn(".onLinkClick(", html)
+        self.assertIn(".onNodeDragEnd(", html)
+        self.assertIn("openNodeConnections", html)
         self.assertIn("rca-graph-data", html)
         self.assertIn("fileCallLinks", html)
         self.assertIn("route:POST /api/payments", html)
