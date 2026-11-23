@@ -44,24 +44,65 @@ Choose the least expensive mode that can establish the truth. Never invoke all s
 | **Mode C — Architecture Discovery** | Large or unfamiliar repositories | Scan repository → Identify modules → Build knowledge graph → Export interactive 3D map (`--html`) → Trace pipelines & contracts → Document system |
 | **Mode D — Architectural Refactoring** | High-risk shared or structural changes | Discover architecture → Identify design flaws → Analyze blast radius → Plan migration → Prune → Rewrite → Verify → Review |
 
-## 4. Adaptive Specialist Roles
+## 4. Adaptive Specialist Roles (Direct File Routing)
 
-Logical responsibilities — run as subagents where the platform supports them, or as sequential reasoning stages otherwise. Activate only the specialists required by task complexity and risk:
+Logical responsibilities — run as subagents where the platform supports them, or as sequential reasoning stages otherwise. **Do not rely on the 1-line summary below**: when activating a role, read `agents/AGENT_CONTRACT.md` and the exact specialist file:
 
-1. **Orchestrator** — Classifies task/risk and coordinates workflow.
-2. **Repository Analyst** — Maps languages, manifests, frameworks, and entrypoints.
-3. **Architecture Analyst** — Discovers module boundaries and contracts.
-4. **Dependency Analyst** — Maps callers, callees, imports, and blast radius.
-5. **Data Flow Analyst** — Tracks inputs, transformations, outputs, and mutations.
-6. **Root-Cause Investigator** — Isolates earliest invalid assumption or state.
-7. **Duplication Analyst** — Detects duplicate and conflicting business rules.
-8. **Refactoring Architect** — Designs one unified source-of-truth solution.
-9. **Implementation Engineer** — Executes approved delete-first changes.
-10. **Test Engineer** — Runs and writes targeted, integration, and regression checks.
-11. **Security Reviewer** — Audits auth, permissions, secrets, and trust boundaries.
-12. **Performance Reviewer** — Audits runtime, query, and resource impact.
-13. **Regression Reviewer** — Verifies preserved contracts and existing behavior.
-14. **Adversarial Reviewer** — Independently challenges diagnosis, diff, and evidence.
+| # | Role | When to Activate | Specification File |
+| --- | --- | --- | --- |
+| 0 | **Shared Contract** | Always when activating any specialist | `agents/AGENT_CONTRACT.md` |
+| 1 | **Orchestrator** | Classify task mode (A–D), risk (0–3), and route workflows | `agents/orchestrator.md` |
+| 2 | **Repository Analyst** | Inventory languages, manifests, frameworks, entrypoints | `agents/repository-analyst.md` |
+| 3 | **Architecture Analyst** | Map subsystem boundaries, contracts, storage layers | `agents/architecture-analyst.md` |
+| 4 | **Dependency Analyst** | Trace callers, callees, imports, blast radius | `agents/dependency-analyst.md` |
+| 5 | **Data Flow Analyst** | Trace inputs, transformations, outputs, state mutations | `agents/data-flow-analyst.md` |
+| 6 | **Root-Cause Investigator** | Isolate earliest invalid state vs. visible symptom | `agents/root-cause-investigator.md` |
+| 7 | **Duplication Analyst** | Find duplicate business rules, dead/obsolete branches | `agents/duplication-analyst.md` |
+| 8 | **Refactoring Architect** | Design one authoritative source-of-truth fix + rollback | `agents/refactoring-architect.md` |
+| 9 | **Implementation Engineer** | Execute approved delete-first changes | `agents/implementation-engineer.md` |
+| 10 | **Test Engineer** | Run and write targeted, integration, regression checks | `agents/test-engineer.md` |
+| 11 | **Security Reviewer** | Audit auth, RBAC, secrets, trust boundaries | `agents/security-reviewer.md` |
+| 12 | **Performance Reviewer** | Audit query count, complexity, memory/I/O regressions | `agents/performance-reviewer.md` |
+| 13 | **Regression Reviewer** | Verify preserved contracts and caller behavior | `agents/regression-reviewer.md` |
+| 14 | **Adversarial Reviewer** | Challenge diagnosis, diff, deletions, and proof | `agents/adversarial-reviewer.md` |
+
+## 4.1 Mandatory Direct Routing Guide (Do Not Stop at This Overview)
+
+Before starting execution, **route directly to and read** the matching companion files relative to this skill directory (load only what the task requires — do not skip specialized guides):
+
+### A. Task Type → Workflow (`workflows/*.md`)
+
+| User Request / Scenario | Workflow File to Read First |
+| --- | --- |
+| Localized bug fix (Mode A) | `workflows/bug-fix.md` |
+| Multi-module, async, or state bug (Mode B) | `workflows/complex-bug-investigation.md` |
+| Regression ("it used to work") | `workflows/regression-investigation.md` |
+| Architecture discovery / 3D system mapping (Mode C) | `workflows/architecture-discovery.md` |
+| Very large repository (>1,000 files) | `workflows/large-project-mapping.md` |
+| End-to-end UI ↔ API ↔ DB tracing | `workflows/frontend-backend-tracing.md` |
+| New feature implementation | `workflows/feature-implementation.md` |
+| Structural refactoring / shared abstraction (Mode D) | `workflows/safe-refactoring.md` |
+| Consolidating duplicate business rules | `workflows/duplicate-logic-consolidation.md` |
+| Technical debt / dead code pruning | `workflows/technical-debt-removal.md` |
+| API contract / payload schema change | `workflows/api-contract-change.md` |
+| Database schema / migration change | `workflows/database-change.md` |
+| Performance bottleneck / query optimization | `workflows/performance-optimization.md` |
+| Security, auth, RBAC, or secrets fix | `workflows/security-fix.md` |
+| Final verification & release quality gate | `workflows/final-verification.md` |
+
+### B. Deep Reference Guides (`references/*.md`)
+
+Read the specific reference when making decisions in that domain:
+- **Diagnosis & Anti-Patch:** `references/root-cause-methodology.md`, `references/anti-patch-rules.md`, `references/engineering-principles.md`, `references/design-principles.md`, `references/git-investigation.md`
+- **Architecture, Dependencies & Flow:** `references/architecture-patterns.md`, `references/dependency-analysis.md`, `references/data-flow-analysis.md`, `references/flow-map-template.md`, `references/framework-analysis.md`, `references/large-repository-guide.md`
+- **Safe Deletion & Blast Radius:** `references/safe-deletion-rules.md`, `references/blast-radius-policy.md`
+- **Security, Performance & Verification:** `references/security-guidelines.md`, `references/performance-guidelines.md`, `references/testing-strategy.md`, `references/verification-evidence.md`
+
+### C. Deliverable Templates, Schemas & Policies
+
+- **Markdown Templates (`templates/*.md`):** `architecture-map.md`, `dependency-map.md`, `flow-ledger.md`, `diagnosis-template.md`, `deletion-plan.md`, `implementation-plan.md`, `test-matrix.md`, `review-report.md`, `completion-report.md`
+- **JSON Schemas (`schemas/*.schema.json`):** `repository`, `graph`, `symbol`, `flow`, `diagnosis`, `change-plan`, `contract`, `evidence`, `verification`
+- **Policies & Config (`config/*.yaml`):** `safety.yaml` (risk tiers 0–3), `quality-gates.yaml`, `verification.yaml`, `languages.yaml`, `frameworks.yaml`, `exclusions.yaml`, `default.yaml`
 
 ## 5. Mandatory Evidence-Driven Workflow
 
@@ -128,6 +169,8 @@ python3 scripts/analyze.py map <repo_path> [--output repository-map.md] [--json]
 python3 scripts/analyze.py graph <repo_path> [--output dependency-graph.json] [--mermaid architecture.mmd] [--html architecture-3d.html] [--pipeline-depth 8]
 python3 scripts/analyze.py impact <repo_path> <file_or_symbol> [--depth 3]
 ```
+
+> **Active CLI note:** Only `scripts/analyze.py` (`health`, `map`, `graph`, `impact`) and its backing scripts (`health_check.py`, `map_project.py`, `generate_graph.py`, `analyze_impact.py`) are implemented. Do not invoke unimplemented placeholder scripts (`find_dead_code.py`, `find_duplicates.py`, `trace_flow.py`, `compare_behavior.py`, `verify_fix.py`).
 
 Graph provenance rule: An edge tagged `static_ast` or `static_structural` must never be presented as a verified runtime call.
 

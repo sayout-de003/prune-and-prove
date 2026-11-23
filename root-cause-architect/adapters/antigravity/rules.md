@@ -6,22 +6,21 @@
 - **Workspace Rules:** `.agents/rules/root-cause-architect.md` (or `AGENTS.md` / `GEMINI.md` at repo root)
 - **Global Skill:** `~/.gemini/config/skills/root-cause-architect/SKILL.md`
 
-## Canonical Protocol & Package Layout
+## Canonical Protocol & Direct Routing
 
-Do not duplicate rules here. Load and follow the canonical skill and its companion specifications:
+Do not stop at the overview in `SKILL.md`. On every non-trivial task, use **Section 4 & 4.1 of `SKILL.md`** to route directly to and read the exact companion files needed:
 
-- **Core Protocol:** `SKILL.md` (4 operating modes, anti-patch rules, safety levels 0–3)
-- **Specialist Roles:** `agents/*.md` (14 adaptive roles — activate only what task risk requires)
-- **Workflows:** `workflows/*.md` (15 task-specific procedures)
+- **Core Protocol & Routing Table:** `SKILL.md` (4 operating modes, anti-patch rules, safety levels 0–3, full file index)
+- **Workflows (read matching task workflow first):** `workflows/*.md` (15 task-specific procedures)
+- **Specialist Roles (read `AGENT_CONTRACT.md` + active roles):** `agents/*.md` (14 adaptive roles)
+- **References & Templates (read on demand):** `references/*.md` (17 guides), `templates/*.md` (9 templates), `schemas/*.schema.json` (9 schemas)
 - **Configuration:** `config/{default,languages,exclusions,frameworks,safety,verification,quality-gates}.yaml`
-- **References & Templates:** `references/*.md`, `templates/*.md`, `schemas/*.schema.json`
-- **Documentation:** `docs/*.md`
 
 ## Deterministic Toolkit (Run Before Editing)
 
 ```bash
 python3 scripts/analyze.py health
 python3 scripts/analyze.py map <repo> [--output repository-map.md]
-python3 scripts/analyze.py graph <repo> [--output dependency-graph.json] [--mermaid architecture.mmd]
+python3 scripts/analyze.py graph <repo> [--output dependency-graph.json] [--mermaid architecture.mmd] [--html architecture-3d.html]
 python3 scripts/analyze.py impact <repo> <file_or_symbol> [--depth 3]
 ```
